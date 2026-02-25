@@ -1,55 +1,46 @@
 "use client";
 
-import { z } from "zod";
-import type { ProductCardProps } from "@/lib/tambo-components";
+interface ProductCardProps {
+  name: string;
+  price: number;
+  image: string;
+  description: string;
+  color?: string;
+  inStock?: boolean;
+}
 
-const productCardSchema = z.object({
-  name: z.string(),
-  price: z.number(),
-  image: z.string().url(),
-  description: z.string(),
-  color: z.string().optional(),
-  inStock: z.boolean(),
-});
-
-export function ProductCard({ name, price, image, description, color, inStock }: ProductCardProps) {
+export function ProductCard({ name, price, image, description, color, inStock = true }: ProductCardProps) {
   return (
-    <div className="group relative overflow-hidden rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 transition-all duration-300 hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/20">
-      <div className="aspect-square overflow-hidden bg-gradient-to-br from-zinc-800 to-zinc-900">
-        <img
-          src={image}
-          alt={name}
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-        />
-        {color && (
-          <div className="absolute top-3 left-3 rounded-full bg-purple-600/90 px-3 py-1 text-xs font-medium text-white backdrop-blur-sm">
-            {color}
+    <div className="p-4">
+      <div className="relative w-full h-40 rounded-xl overflow-hidden bg-zinc-800 mb-3">
+        <img src={image} alt={name} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = "https://picsum.photos/400/300"; }} />
+        <div className="absolute top-2 right-2 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-sm text-sm font-bold text-white">
+          ${price}
+        </div>
+        {!inStock && (
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+            <span className="text-red-400 font-medium text-sm">Out of Stock</span>
           </div>
         )}
-        <div className={`absolute top-3 right-3 rounded-full px-3 py-1 text-xs font-medium backdrop-blur-sm ${
-          inStock 
-            ? "bg-emerald-600/90 text-white" 
-            : "bg-red-600/90 text-white"
-        }`}>
-          {inStock ? "In Stock" : "Out of Stock"}
-        </div>
       </div>
-      <div className="p-5">
-        <h3 className="text-lg font-semibold text-white mb-1 truncate">{name}</h3>
-        <p className="text-sm text-zinc-400 line-clamp-2 mb-3">{description}</p>
-        <div className="flex items-center justify-between">
-          <span className="text-2xl font-bold text-cyan-400">${price.toFixed(2)}</span>
-          <button className="rounded-xl bg-purple-600 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-purple-500 hover:scale-105 active:scale-95">
-            Add to Cart
-          </button>
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <h3 className="text-white font-semibold text-sm truncate">{name}</h3>
+          <p className="text-zinc-400 text-xs mt-1 line-clamp-2">{description}</p>
         </div>
+        {color && color !== "default" && (
+          <div className="flex-shrink-0 flex items-center gap-1.5 mt-0.5">
+            <div className="w-3 h-3 rounded-full border border-white/20" style={{ backgroundColor: color }} />
+            <span className="text-[10px] text-zinc-500 capitalize">{color}</span>
+          </div>
+        )}
       </div>
+      {inStock && (
+        <div className="flex items-center gap-1.5 mt-2">
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+          <span className="text-[10px] text-emerald-400">In Stock</span>
+        </div>
+      )}
     </div>
   );
 }
-
-export const productCardConfig = {
-  component: ProductCard,
-  propsSchema: productCardSchema,
-  name: "ProductCard",
-};

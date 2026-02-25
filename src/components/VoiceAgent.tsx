@@ -4,32 +4,23 @@ import { useState, useEffect, useMemo } from "react";
 import { useRoomContext, useLocalParticipant } from "@livekit/components-react";
 import { RoomEvent } from "livekit-client";
 
-interface VoiceAgentProps {
-  onToggleMic?: (enabled: boolean) => void;
-}
-
-export function VoiceAgent({ onToggleMic }: VoiceAgentProps) {
+export function VoiceAgent() {
   const room = useRoomContext();
   const localParticipant = useLocalParticipant();
   const [isMicEnabled, setIsMicEnabled] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
-  const [isSpeaking] = useState(false);
-  const [micError, setMicError] = useState<string>("");
+  const [micError, setMicError] = useState("");
 
-  // Pre-compute bar heights to avoid Math.random in render
-  const barHeights = useMemo(() => [12, 20, 8, 16, 24], []);
+  const barHeights = useMemo(() => [14, 22, 10, 18, 26, 12, 20], []);
 
   useEffect(() => {
     if (!room) return;
-    const handleConnected = () => setIsConnected(true);
-    const handleDisconnected = () => setIsConnected(false);
-    room.on(RoomEvent.Connected, handleConnected);
-    room.on(RoomEvent.Disconnected, handleDisconnected);
+    const onConnect = () => setIsConnected(true);
+    const onDisconnect = () => setIsConnected(false);
+    room.on(RoomEvent.Connected, onConnect);
+    room.on(RoomEvent.Disconnected, onDisconnect);
     if (room.state === "connected") setIsConnected(true);
-    return () => {
-      room.off(RoomEvent.Connected, handleConnected);
-      room.off(RoomEvent.Disconnected, handleDisconnected);
-    };
+    return () => { room.off(RoomEvent.Connected, onConnect); room.off(RoomEvent.Disconnected, onDisconnect); };
   }, [room]);
 
   useEffect(() => {
@@ -38,77 +29,73 @@ export function VoiceAgent({ onToggleMic }: VoiceAgentProps) {
 
   const toggleMic = async () => {
     if (!localParticipant?.localParticipant) return;
-
-    // Check if getUserMedia is available (requires HTTPS or localhost)
     if (!navigator?.mediaDevices?.getUserMedia) {
-      setMicError("Microphone requires HTTPS. Use localhost or enable HTTPS.");
+      setMicError("Mic requires HTTPS");
       return;
     }
-
     try {
       setMicError("");
-      const newState = !isMicEnabled;
-      await localParticipant.localParticipant.setMicrophoneEnabled(newState);
-      setIsMicEnabled(newState);
-      onToggleMic?.(newState);
-    } catch (error) {
-      console.error("Failed to toggle microphone:", error);
-      setMicError("Microphone access denied. Check browser permissions.");
+      const next = !isMicEnabled;
+      await localParticipant.localParticipant.setMicrophoneEnabled(next);
+      setIsMicEnabled(next);
+    } catch {
+      setMicError("Mic access denied");
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center gap-6 p-8">
+    <div className="flex flex-col items-center gap-5">
+      {/* Mic Button */}
       <div className="relative">
+        {isMicEnabled && (
+          <>
+            <span className="absolute inset-0 rounded-full bg-purple-500/30 animate-ping" />
+            <span className="absolute -inset-3 rounded-full bg-purple-500/10 animate-pulse" />
+          </>
+        )}
         <button
           onClick={toggleMic}
           disabled={!isConnected}
-          className={`relative w-24 h-24 rounded-full flex items-center justify-center transition-all duration-300 ${
+          className={`relative w-20 h-20 md:w-24 md:h-24 rounded-full flex items-center justify-center transition-all duration-300 ${
             isMicEnabled
-              ? "bg-gradient-to-br from-purple-600 to-cyan-500 shadow-lg shadow-purple-500/50 animate-pulse"
-              : "bg-zinc-800 border-2 border-zinc-700 hover:border-purple-500"
-          } ${!isConnected ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:scale-105 active:scale-95"}`}
+              ? "bg-gradient-to-br from-purple-600 to-cyan-500 shadow-xl shadow-purple-500/40"
+              : "bg-zinc-800/80 border-2 border-zinc-700 hover:border-purple-500/50"
+          } ${!isConnected ? "opacity-40 cursor-not-allowed" : "cursor-pointer active:scale-90"}`}
         >
           {isMicEnabled ? (
-            <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-8 h-8 md:w-10 md:h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
             </svg>
           ) : (
-            <svg className="w-10 h-10 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" clipRule="evenodd" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+            <svg className="w-8 h-8 md:w-10 md:h-10 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
             </svg>
           )}
-
-          {isSpeaking && (
-            <span className="absolute inset-0 rounded-full border-4 border-cyan-400 animate-ping opacity-75" />
-          )}
         </button>
-
-        {isMicEnabled && (
-          <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 flex gap-0.5">
-            {barHeights.map((h, i) => (
-              <div
-                key={i}
-                className="w-1 bg-cyan-400 rounded-full animate-pulse"
-                style={{ height: `${h}px`, animationDelay: `${i * 100}ms` }}
-              />
-            ))}
-          </div>
-        )}
       </div>
 
-      <div className="flex flex-col items-center gap-2">
-        <div className="flex items-center gap-3">
-          <div className={`w-2 h-2 rounded-full ${isConnected ? "bg-emerald-400" : "bg-zinc-600"}`} />
-          <span className="text-sm font-medium text-zinc-400">
-            {isConnected ? (isMicEnabled ? "Listening..." : "Click to speak") : "Connecting..."}
-          </span>
+      {/* Audio Bars */}
+      {isMicEnabled && (
+        <div className="flex items-end gap-[3px] h-7">
+          {barHeights.map((h, i) => (
+            <div
+              key={i}
+              className="w-1 rounded-full bg-gradient-to-t from-purple-500 to-cyan-400 animate-pulse"
+              style={{ height: `${h}px`, animationDelay: `${i * 80}ms` }}
+            />
+          ))}
         </div>
-        {micError && (
-          <p className="text-xs text-red-400 text-center max-w-[200px]">{micError}</p>
-        )}
+      )}
+
+      {/* Status */}
+      <div className="flex items-center gap-2">
+        <div className={`w-2 h-2 rounded-full ${isConnected ? "bg-emerald-400 shadow-sm shadow-emerald-400/50" : "bg-zinc-600"}`} />
+        <span className="text-xs font-medium text-zinc-400">
+          {!isConnected ? "Connecting..." : isMicEnabled ? "Listening..." : "Tap to speak"}
+        </span>
       </div>
+
+      {micError && <p className="text-[10px] text-red-400">{micError}</p>}
     </div>
   );
 }

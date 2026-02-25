@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { ProductCard } from "./pikaui/ProductCard";
 import { FormStep } from "./pikaui/FormStep";
 import { ApprovalCard } from "./pikaui/ApprovalCard";
 import { DataChart } from "./pikaui/DataChart";
 import { StatusBanner } from "./pikaui/StatusBanner";
-import type { ProductCardProps, FormStepProps, ApprovalCardProps, DataChartProps, StatusBannerProps } from "@/lib/tambo-components";
 
 interface ComponentItem {
   id: string;
@@ -16,113 +15,66 @@ interface ComponentItem {
 
 interface GenerativePanelProps {
   components: ComponentItem[];
-  onClear?: () => void;
+  onClear: () => void;
 }
 
-const componentMap: Record<string, React.ComponentType<any>> = {
-  ProductCard,
-  FormStep,
-  ApprovalCard,
-  DataChart,
-  StatusBanner,
+const COMPONENT_MAP: Record<string, React.ComponentType<Record<string, unknown>>> = {
+  ProductCard: ProductCard as unknown as React.ComponentType<Record<string, unknown>>,
+  FormStep: FormStep as unknown as React.ComponentType<Record<string, unknown>>,
+  ApprovalCard: ApprovalCard as unknown as React.ComponentType<Record<string, unknown>>,
+  DataChart: DataChart as unknown as React.ComponentType<Record<string, unknown>>,
+  StatusBanner: StatusBanner as unknown as React.ComponentType<Record<string, unknown>>,
 };
 
 export function GenerativePanel({ components, onClear }: GenerativePanelProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [animatedIds, setAnimatedIds] = useState<Set<string>>(new Set());
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (components.length > 0) {
-      const latestId = components[components.length - 1].id;
-      if (!animatedIds.has(latestId)) {
-        setAnimatedIds(prev => new Set(prev).add(latestId));
-      }
+    if (scrollRef.current && components.length > 0) {
+      scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
     }
-  }, [components, animatedIds]);
-
-  const renderComponent = (item: ComponentItem) => {
-    const Component = componentMap[item.component];
-    if (!Component) {
-      return (
-        <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400">
-          Unknown component: {item.component}
-        </div>
-      );
-    }
-
-    return <Component {...item.props} />;
-  };
+  }, [components.length]);
 
   return (
     <div className="h-full flex flex-col">
-      {components.length > 0 && (
-        <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-          <span className="text-sm font-medium text-zinc-400">
-            {components.length} component{components.length !== 1 ? "s" : ""}
-          </span>
-          <button
-            onClick={onClear}
-            className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
-          >
+      {/* Header */}
+      <div className="flex-shrink-0 flex items-center justify-between px-4 py-3 border-b border-white/10">
+        <h2 className="text-sm font-medium text-zinc-400">Live UI</h2>
+        {components.length > 0 && (
+          <button onClick={onClear} className="text-xs text-zinc-500 hover:text-white transition px-2 py-1 rounded-lg hover:bg-white/10">
             Clear all
           </button>
-        </div>
-      )}
-      
-      <div 
-        ref={containerRef}
-        className="flex-1 overflow-y-auto p-4 space-y-4"
-      >
+        )}
+      </div>
+
+      {/* Widgets Area */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
         {components.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center p-8">
-            <div className="w-20 h-20 mb-6 rounded-2xl bg-gradient-to-br from-purple-600/20 to-cyan-500/20 flex items-center justify-center">
-              <svg className="w-10 h-10 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          <div className="h-full flex flex-col items-center justify-center text-center px-6">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-600/20 to-cyan-500/20 flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-white mb-2">Ready for Voice Commands</h3>
-            <p className="text-sm text-zinc-400 max-w-xs">
-              Click the microphone and speak to see dynamic UI components appear here in real-time.
-            </p>
-            <div className="mt-8 flex flex-col gap-3 text-left">
-              <div className="flex items-start gap-3 text-sm">
-                <div className="w-5 h-5 rounded-full bg-purple-600/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-xs text-purple-400">1</span>
-                </div>
-                <span className="text-zinc-400">Say "Show me products under $100"</span>
-              </div>
-              <div className="flex items-start gap-3 text-sm">
-                <div className="w-5 h-5 rounded-full bg-purple-600/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-xs text-purple-400">2</span>
-                </div>
-                <span className="text-zinc-400">Or "Fill in my name as Ali"</span>
-              </div>
-              <div className="flex items-start gap-3 text-sm">
-                <div className="w-5 h-5 rounded-full bg-purple-600/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                  <span className="text-xs text-purple-400">3</span>
-                </div>
-                <span className="text-zinc-400">Try "Show me a chart"</span>
-              </div>
-            </div>
+            <p className="text-zinc-500 text-sm">Speak to see the magic</p>
+            <p className="text-zinc-600 text-xs mt-1">Try: &ldquo;Show me a product&rdquo;</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {components.map((item, index) => (
+          components.map((item, index) => {
+            const Component = COMPONENT_MAP[item.component];
+            if (!Component) return null;
+            return (
               <div
                 key={item.id}
-                className={`transition-all duration-500 ${
-                  animatedIds.has(item.id)
-                    ? "opacity-100 translate-y-0"
-                    : "opacity-0 translate-y-4"
-                }`}
-                style={{
-                  animationDelay: `${index * 100}ms`,
-                }}
+                className="animate-in slide-in-from-bottom-4 fade-in duration-500"
+                style={{ animationDelay: `${index * 100}ms`, animationFillMode: "both" }}
               >
-                {renderComponent(item)}
+                <div className="rounded-2xl bg-white/[0.05] backdrop-blur-xl border border-white/10 overflow-hidden shadow-lg shadow-black/20">
+                  <Component {...item.props} />
+                </div>
               </div>
-            ))}
-          </div>
+            );
+          })
         )}
       </div>
     </div>
